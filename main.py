@@ -2,11 +2,15 @@ import tkinter as tk
 
 from data_getter import ColumnPage
 from widgets import ColumnWindow, RowWindow
+from fabric import OSFabric
 
 
 class Application(tk.Tk):
     def __init__(self, width, height, bar_height=30):
         super().__init__()
+
+        self.fabric = OSFabric()
+
         self.title("File manager")
         self.geometry(f"{width}x{height}")
         self.width = width
@@ -31,14 +35,15 @@ class Application(tk.Tk):
             width=self.width,
             height=bar_height,
             bar_height=bar_height,
-            buttons_names=['кнопка 1', 'кнопка 2', 'кнопка 3'],
+            buttons_names=['Открыть', 'Создать', 'Копировать', 'Вырезать', 'Удалить'],
+            fabric=True
         )
         self.bottom_bar = RowWindow(
             self.f,
             width=self.width,
             height=self.height - bar_height,
             bar_height=bar_height,
-            buttons_names=['кнопка 3', 'кнопка 4'],
+            buttons_names=['Помощь', 'Настройки'],
         )
 
         self.left_window.c.place(x=0, y=bar_height)
@@ -47,7 +52,7 @@ class Application(tk.Tk):
         self.bottom_bar.c.place(x=0, y=height - bar_height)
 
         self.bind_keys()
-        self.window_type= 'column'
+        self.window_type = 'column'
 
         self.active_cursor_bar = None
         self.bars = [self.top_bar, self.bottom_bar]
@@ -99,7 +104,7 @@ class Application(tk.Tk):
     def on_key_press(self, event):
         if event.keysym in ["Up", "w", "W"]:
             if self.window_type == 'column':
-                self.temp_window.cursor_position -= 1
+                self.temp_window.move_cursor(-1)
 
             elif self.window_type == 'row' and self.active_cursor_bar == 1:
                 self.temp_window = self.last_temp
@@ -110,7 +115,7 @@ class Application(tk.Tk):
                 self.window_type = 'column'
         if event.keysym in ["Down", "s", "S"]:
             if self.window_type == 'column':
-                self.temp_window.cursor_position += 1
+                self.temp_window.move_cursor(1)
 
             elif self.window_type == 'row' and self.active_cursor_bar == 0:
                 self.temp_window = self.last_temp
@@ -124,38 +129,29 @@ class Application(tk.Tk):
                 self.change_active(left=True)
 
             elif self.window_type == 'row':
-                self.temp_window.cursor_position -= 1
+                self.temp_window.move_cursor(-1)
         if event.keysym in ["Right", "d", "D"]:
             if self.window_type == 'column':
                 self.change_active(left=False)
 
             elif self.window_type == 'row':
-                self.temp_window.cursor_position += 1
+                self.temp_window.move_cursor(1)
         if event.keysym in ["1"]:
-            print(event.keysym)
             self.active_cursor_bar = 0
+            self.last_temp = self.temp_window if self.window_type == 'column' else self.last_temp
             self.window_type = 'row'
             self.temp_window.selected = False
             self.temp_window.draw_temp_state_with_error_check()
-            self.last_temp = self.temp_window
             self.temp_window = self.bars[self.active_cursor_bar]
         if event.keysym in ["2"]:
-            print(event.keysym)
             self.active_cursor_bar = 1
+            self.last_temp = self.temp_window if self.window_type == 'column' else self.last_temp
             self.window_type = 'row'
             self.temp_window.selected = False
             self.temp_window.draw_temp_state_with_error_check()
-            self.last_temp = self.temp_window
             self.temp_window = self.bars[self.active_cursor_bar]
         if event.keysym in ["Return"]:
-            if self.window_type == 'column':
-                if self.temp_window.selected_file[1]:
-                    self.temp_window.data_page.cd(self.temp_window.selected_file[0])
-                    self.temp_window.reset_counters()
-                    self.temp_window.selected_file = (None, False)
-
-            elif self.window_type == 'row':
-                self.temp_window.update_active_option()
+            self.temp_window.enter_press(self.fabric)
 
         if event.keysym in ["Escape"]:
             if self.window_type == 'column':

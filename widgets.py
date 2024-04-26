@@ -15,6 +15,8 @@ class AdapterWindow:
         self.width = width
         self.height = height
 
+        self.cursor_position = 0
+
         self.get_fonts()
         
     def get_fonts(self):
@@ -25,6 +27,13 @@ class AdapterWindow:
     @abstractmethod
     def draw_temp_state():
         pass
+
+    @abstractmethod
+    def enter_press():
+        pass
+
+    def move_cursor(self, value):
+        self.cursor_position += value
     
 
 class ColumnWindow(AdapterWindow):
@@ -36,7 +45,6 @@ class ColumnWindow(AdapterWindow):
         self.data_page = data_page_cls()
         self.text_path_field = None
 
-        self.cursor_position = 0
         self.offset = 0
         self.counters_history = []
 
@@ -144,17 +152,18 @@ class ColumnWindow(AdapterWindow):
 
         f = self.draw_temp_state()
         if f:
-            print(f)
             self.data_page.cd_higher()
             self.get_counters()
             self.draw_temp_state(highligted_color="red", higlighted_text=f)
 
+    def enter_press(self, fabric):
+        fabric(temp_window=self)
+
 
 class RowWindow(AdapterWindow):
-    def __init__(self, root, width, height, bar_height=30, buttons_names=None, buttons_functions=None, buttons_coords=None, active=False):
+    def __init__(self, root, width, height, bar_height=30, buttons_names=None, fabric=False, buttons_coords=None, active=False):
         super().__init__(root, width, height, active)
 
-        self.cursor_position = 0
         self.active_option = 0
 
         self.bar_height = 30
@@ -162,7 +171,7 @@ class RowWindow(AdapterWindow):
         self.buttons_names = buttons_names
         self.buttons_len = len(buttons_names)
         self.buttons_coords = np.linspace(0, width, self.buttons_len + 1) if buttons_coords is None else buttons_coords
-        self.buttons_functions = [None] * self.buttons_len if buttons_functions is None else buttons_functions
+        self.fabric = fabric
 
     def update_active_option(self):
         self.active_option = self.cursor_position
@@ -180,7 +189,6 @@ class RowWindow(AdapterWindow):
         font = self.common_font
 
         for i, (name, x_pos1, x_pos2) in enumerate(zip(content, self.buttons_coords, self.buttons_coords[1:])):
-            print(i, self.active_option)
             rect_color = "#AFEEEE" if i == self.active_option else None
             self.c.create_rectangle(
                     x_pos1, 0, x_pos2, self.bar_height - 1, fill=rect_color
@@ -202,3 +210,9 @@ class RowWindow(AdapterWindow):
     def draw_temp_state_with_error_check(self):
         self.cursor_position = max(min(self.cursor_position, self.buttons_len - 1), 0)
         self.draw_temp_state()
+
+    def enter_press(self, fabric):
+        if self.fabric:
+            fabric.choose_mode(self.cursor_position)
+
+        self.update_active_option()

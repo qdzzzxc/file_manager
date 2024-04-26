@@ -33,8 +33,7 @@ class ColumnPage(FilePage):
         self.path = os.path.join(self.path, file_name)
 
     def cd_higher(self):
-        # if self.path != self.work_dir:  # выход из мейн директории
-        if True:
+        if self.path != self.work_dir:  # выход из мейн директории
             self.path = os.path.dirname(self.path)
             return True
         return False
