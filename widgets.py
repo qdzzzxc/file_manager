@@ -39,7 +39,7 @@ class ColumnWindow(AdapterWindow):
 
         self.first_offset =  first_offset
         self.y_pad = y_pad
-        self.files_on_page = (height - self.first_offset) // y_pad  # for bar, for dots
+        self.files_on_page = (height - self.first_offset) // y_pad  - 1# for bar, for dots
 
     def draw_temp_state(self, highligted_color="black", higlighted_text=None):
         content = self.data_page.get_page_content()
@@ -55,10 +55,14 @@ class ColumnWindow(AdapterWindow):
         self.c.delete("all")
 
         font = self.common_font
-        self.text_path_field = tk.Text(self.c, height=1, width=self.width, bg='lightblue', font=font, highlightthickness=0)
+        self.text_path_field = tk.Text(self.c, height=1, width=self.width, 
+                                       bg='lightblue', font=font, bd=0, wrap='none')
+        
         self.text_path_field.place(x=0, y=0)
         self.text_path_field.insert(tk.END, self.data_page.path)
-
+        self.c.create_rectangle(
+                    0, 20, self.width, self.height, fill=rect_color
+                )
         y_offset = self.first_offset
 
         for i, (file_name, isdir) in enumerate(
@@ -81,7 +85,7 @@ class ColumnWindow(AdapterWindow):
                 )
                 if higlighted_text:
                     self.c.create_text(
-                        self.selected_font.measure("0") * len(text),
+                        sum([self.selected_font.measure(x) for x in text]) + self.selected_font.measure('O'),
                         y_offset + 1,
                         anchor="nw",
                         text=higlighted_text,
@@ -131,6 +135,8 @@ class ColumnWindow(AdapterWindow):
             self.offset -= self.offset - self.cursor_position
 
     def draw_temp_state_with_error_check(self):
+        self.calculate_offset()
+
         f = self.draw_temp_state()
         if f:
             print(f)
