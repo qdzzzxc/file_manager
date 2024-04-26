@@ -18,7 +18,6 @@ class Application(tk.Tk):
             width=self.width // 2,
             height=self.height - bar_height * 2,
             data_page_cls=ColumnPage,
-            active=True,
         )
         self.right_window = ColumnWindow(
             self.f,
@@ -55,10 +54,10 @@ class Application(tk.Tk):
 
         self.active_cursor = 0
         self.windows = [self.left_window, self.right_window]
+        self.temp_window = self.left_window
+        self.change_active(left=True)
         for window in self.windows + self.bars:
             window.draw_temp_state()
-
-        self.temp_window = self.left_window
 
     def bind_keys(self):
         self.f.focus_set()
@@ -84,59 +83,87 @@ class Application(tk.Tk):
 
     def change_active(self, left=True):
         if left:
-            self.active_cursor -=1
+            self.active_cursor -= 1
         else:
-            self.active_cursor +=1
+            self.active_cursor += 1
 
         self.active_cursor = max(min(self.active_cursor, len(self.windows) - 1), 0)
         
         self.temp_window.active = False
+        self.temp_window.selected = False
         self.temp_window.draw_temp_state_with_error_check()
         self.temp_window = self.windows[self.active_cursor]
         self.temp_window.active = True
+        self.temp_window.selected = True
 
     def on_key_press(self, event):
         if event.keysym in ["Up", "w", "W"]:
             if self.window_type == 'column':
                 self.temp_window.cursor_position -= 1
+
             elif self.window_type == 'row' and self.active_cursor_bar == 1:
+                self.temp_window = self.last_temp
+                self.temp_window.selected = True
+                self.last_temp = None
+                
                 self.active_cursor_bar = None
                 self.window_type = 'column'
         if event.keysym in ["Down", "s", "S"]:
             if self.window_type == 'column':
                 self.temp_window.cursor_position += 1
+
             elif self.window_type == 'row' and self.active_cursor_bar == 0:
+                self.temp_window = self.last_temp
+                self.temp_window.selected = True
+                self.last_temp = None
+
                 self.active_cursor_bar = None
                 self.window_type = 'column'
         if event.keysym in ["Left", "a", "A"]:
             if self.window_type == 'column':
                 self.change_active(left=True)
+
             elif self.window_type == 'row':
                 self.temp_window.cursor_position -= 1
         if event.keysym in ["Right", "d", "D"]:
             if self.window_type == 'column':
                 self.change_active(left=False)
+
             elif self.window_type == 'row':
                 self.temp_window.cursor_position += 1
         if event.keysym in ["1"]:
             print(event.keysym)
             self.active_cursor_bar = 0
             self.window_type = 'row'
+            self.temp_window.selected = False
+            self.temp_window.draw_temp_state_with_error_check()
+            self.last_temp = self.temp_window
             self.temp_window = self.bars[self.active_cursor_bar]
         if event.keysym in ["2"]:
             print(event.keysym)
             self.active_cursor_bar = 1
             self.window_type = 'row'
+            self.temp_window.selected = False
+            self.temp_window.draw_temp_state_with_error_check()
+            self.last_temp = self.temp_window
             self.temp_window = self.bars[self.active_cursor_bar]
         if event.keysym in ["Return"]:
-            if self.temp_window.selected_file[1]:
-                self.temp_window.data_page.cd(self.temp_window.selected_file[0])
-                self.temp_window.reset_counters()
-                self.temp_window.selected_file = (None, False)
+            if self.window_type == 'column':
+                if self.temp_window.selected_file[1]:
+                    self.temp_window.data_page.cd(self.temp_window.selected_file[0])
+                    self.temp_window.reset_counters()
+                    self.temp_window.selected_file = (None, False)
+
+            elif self.window_type == 'row':
+                self.temp_window.update_active_option()
+
         if event.keysym in ["Escape"]:
-            check_head = self.temp_window.data_page.cd_higher()
-            if check_head:
-                self.temp_window.get_counters()
+            if self.window_type == 'column':
+                check_head = self.temp_window.data_page.cd_higher()
+                if check_head:
+                    self.temp_window.get_counters()
+            elif self.window_type == 'row':
+                pass
 
         self.temp_window.draw_temp_state_with_error_check()
 

@@ -4,6 +4,7 @@ import numpy as np
 import tkinter.font as tkFont
 from abc import abstractmethod
 
+
 class AdapterWindow:
     def __init__(self, root, width, height, data_page_cls, active=False):
         self.active = active
@@ -27,8 +28,10 @@ class AdapterWindow:
     
 
 class ColumnWindow(AdapterWindow):
-    def __init__(self, root, width, height, data_page_cls, y_pad=20, first_offset = 40, active=False):
+    def __init__(self, root, width, height, data_page_cls, y_pad=20, first_offset=40, active=False):
         super().__init__(root, width, height, active)
+
+        self.selected = False
 
         self.data_page = data_page_cls()
         self.text_path_field = None
@@ -37,9 +40,9 @@ class ColumnWindow(AdapterWindow):
         self.offset = 0
         self.counters_history = []
 
-        self.first_offset =  first_offset
+        self.first_offset = first_offset
         self.y_pad = y_pad
-        self.files_on_page = (height - self.first_offset) // y_pad  - 1# for bar, for dots
+        self.files_on_page = (height - self.first_offset) // y_pad - 1 # for bar, for dots
 
     def draw_temp_state(self, highligted_color="black", higlighted_text=None):
         content = self.data_page.get_page_content()
@@ -71,7 +74,9 @@ class ColumnWindow(AdapterWindow):
             text = f"> {file_name}" if isdir else f"| {file_name}"
             if i == self.cursor_position - self.offset:
                 self.selected_file = (file_name, isdir)
-                rect_color = "#E0FFFF" if self.active else rect_color
+                rect_color = "#AFEEEE" if self.active else rect_color
+                rect_color = "#E0FFFF" if self.selected else rect_color
+
                 self.c.create_rectangle(
                     0, y_offset, self.width, y_offset + 20, fill=rect_color
                 )
@@ -144,11 +149,14 @@ class ColumnWindow(AdapterWindow):
             self.get_counters()
             self.draw_temp_state(highligted_color="red", higlighted_text=f)
 
+
 class RowWindow(AdapterWindow):
     def __init__(self, root, width, height, bar_height=30, buttons_names=None, buttons_functions=None, buttons_coords=None, active=False):
         super().__init__(root, width, height, active)
 
         self.cursor_position = 0
+        self.active_option = 0
+
         self.bar_height = 30
 
         self.buttons_names = buttons_names
@@ -156,21 +164,28 @@ class RowWindow(AdapterWindow):
         self.buttons_coords = np.linspace(0, width, self.buttons_len + 1) if buttons_coords is None else buttons_coords
         self.buttons_functions = [None] * self.buttons_len if buttons_functions is None else buttons_functions
 
-    def draw_temp_state(self, highligted_color="black", higlighted_text=None):
+    def update_active_option(self):
+        self.active_option = self.cursor_position
+
+    def draw_temp_state(self, highligted_color="black"):
         content = self.buttons_names
         if isinstance(content, dict):
             return content["error"]
         self.draw_page(
-            content, highligted_color=highligted_color, higlighted_text=higlighted_text
+            content, highligted_color=highligted_color
         )
 
-    def draw_page(
-        self, content, highligted_color="black", higlighted_text=None, rect_color=None
-    ):
+    def draw_page(self, content, highligted_color="black"):
         self.c.delete("all")
         font = self.common_font
 
         for i, (name, x_pos1, x_pos2) in enumerate(zip(content, self.buttons_coords, self.buttons_coords[1:])):
+            print(i, self.active_option)
+            rect_color = "#AFEEEE" if i == self.active_option else None
+            self.c.create_rectangle(
+                    x_pos1, 0, x_pos2, self.bar_height - 1, fill=rect_color
+                )
+            
             text = name
             if i == self.cursor_position:
                 self.c.create_text(
@@ -184,9 +199,6 @@ class RowWindow(AdapterWindow):
             else:
                 self.c.create_text((x_pos1 + x_pos2)/2, self.bar_height/2, anchor="center", text=text, font=font)
 
-            self.c.create_rectangle(
-                    x_pos1, 0, x_pos2, self.bar_height - 1, fill=None
-                )
-
     def draw_temp_state_with_error_check(self):
+        self.cursor_position = max(min(self.cursor_position, self.buttons_len - 1), 0)
         self.draw_temp_state()
