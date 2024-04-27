@@ -18,11 +18,15 @@ class AdapterWindow:
         self.cursor_position = 0
 
         self.get_fonts()
-        
+
     def get_fonts(self):
         self.common_font = tkFont.Font(family="Helvetica", size=12)
         self.selected_font = tkFont.Font(family="Helvetica", size=12, weight="bold")
         self.error_font = tkFont.Font(family="Helvetica", size=10)
+        self.button_font = tkFont.Font(family="Helvetica", size=11)
+        self.selected_button_font = tkFont.Font(
+            family="Helvetica", size=11, weight="bold"
+        )
 
     @abstractmethod
     def draw_temp_state():
@@ -34,10 +38,19 @@ class AdapterWindow:
 
     def move_cursor(self, value):
         self.cursor_position += value
-    
+
 
 class ColumnWindow(AdapterWindow):
-    def __init__(self, root, width, height, data_page_cls, y_pad=20, first_offset=40, active=False):
+    def __init__(
+        self,
+        root,
+        width,
+        height,
+        data_page_cls,
+        y_pad=20,
+        first_offset=40,
+        active=False,
+    ):
         super().__init__(root, width, height, active)
 
         self.selected = False
@@ -50,7 +63,9 @@ class ColumnWindow(AdapterWindow):
 
         self.first_offset = first_offset
         self.y_pad = y_pad
-        self.files_on_page = (height - self.first_offset) // y_pad - 1 # for bar, for dots
+        self.files_on_page = (
+            height - self.first_offset
+        ) // y_pad - 1  # for bar, for dots
 
     def draw_temp_state(self, highligted_color="black", higlighted_text=None):
         content = self.data_page.get_page_content()
@@ -62,22 +77,27 @@ class ColumnWindow(AdapterWindow):
 
     def draw_page(
         self, content, highligted_color="black", higlighted_text=None, rect_color=None
-    ):  
+    ):
         self.c.delete("all")
 
         font = self.common_font
-        self.text_path_field = tk.Text(self.c, height=1, width=self.width, 
-                                       bg='lightblue', font=font, bd=0, wrap='none')
-        
+        self.text_path_field = tk.Text(
+            self.c,
+            height=1,
+            width=self.width,
+            bg="lightblue",
+            font=font,
+            bd=0,
+            wrap="none",
+        )
+
         self.text_path_field.place(x=0, y=0)
         self.text_path_field.insert(tk.END, self.data_page.path)
-        self.c.create_rectangle(
-                    0, 20, self.width, self.height, fill=rect_color
-                )
+        self.c.create_rectangle(0, 20, self.width, self.height, fill=rect_color)
         y_offset = self.first_offset
 
         for i, (file_name, isdir) in enumerate(
-            content[self.offset : self.offset + self.files_on_page]
+            content[self.offset: self.offset + self.files_on_page]
         ):
             text = f"> {file_name}" if isdir else f"| {file_name}"
             if i == self.cursor_position - self.offset:
@@ -98,7 +118,8 @@ class ColumnWindow(AdapterWindow):
                 )
                 if higlighted_text:
                     self.c.create_text(
-                        sum([self.selected_font.measure(x) for x in text]) + self.selected_font.measure('O'),
+                        sum([self.selected_font.measure(x) for x in text])
+                        + self.selected_font.measure("O"),
                         y_offset + 1,
                         anchor="nw",
                         text=higlighted_text,
@@ -111,7 +132,13 @@ class ColumnWindow(AdapterWindow):
             y_offset += self.y_pad
 
         if self.offset > 0:
-            self.c.create_text(10, self.first_offset - self.y_pad , anchor="nw", text="...", font=self.selected_font)
+            self.c.create_text(
+                10,
+                self.first_offset - self.y_pad,
+                anchor="nw",
+                text="...",
+                font=self.selected_font,
+            )
 
         if self.data_page.data_length > self.offset + self.files_on_page:
             self.c.create_text(
@@ -161,16 +188,30 @@ class ColumnWindow(AdapterWindow):
 
 
 class RowWindow(AdapterWindow):
-    def __init__(self, root, width, height, bar_height=30, buttons_names=None, fabric=False, buttons_coords=None, active=False):
+    def __init__(
+        self,
+        root,
+        width,
+        height,
+        bar_height=30,
+        buttons_names=None,
+        fabric=False,
+        buttons_coords=None,
+        active=False,
+    ):
         super().__init__(root, width, height, active)
 
         self.active_option = 0
 
-        self.bar_height = 30
+        self.bar_height = bar_height
 
         self.buttons_names = buttons_names
         self.buttons_len = len(buttons_names)
-        self.buttons_coords = np.linspace(0, width, self.buttons_len + 1) if buttons_coords is None else buttons_coords
+        self.buttons_coords = (
+            np.linspace(0, width, self.buttons_len + 1)
+            if buttons_coords is None
+            else buttons_coords
+        )
         self.fabric = fabric
 
     def update_active_option(self):
@@ -180,32 +221,38 @@ class RowWindow(AdapterWindow):
         content = self.buttons_names
         if isinstance(content, dict):
             return content["error"]
-        self.draw_page(
-            content, highligted_color=highligted_color
-        )
+        self.draw_page(content, highligted_color=highligted_color)
 
     def draw_page(self, content, highligted_color="black"):
         self.c.delete("all")
-        font = self.common_font
+        font = self.button_font
 
-        for i, (name, x_pos1, x_pos2) in enumerate(zip(content, self.buttons_coords, self.buttons_coords[1:])):
+        for i, (name, x_pos1, x_pos2) in enumerate(
+            zip(content, self.buttons_coords, self.buttons_coords[1:])
+        ):
             rect_color = "#AFEEEE" if i == self.active_option else None
             self.c.create_rectangle(
-                    x_pos1, 0, x_pos2, self.bar_height - 1, fill=rect_color
-                )
-            
+                x_pos1, 0, x_pos2, self.bar_height - 1, fill=rect_color
+            )
+
             text = name
             if i == self.cursor_position:
                 self.c.create_text(
-                    (x_pos1 + x_pos2)/2,
-                    self.bar_height/2,
+                    (x_pos1 + x_pos2) / 2,
+                    self.bar_height / 2,
                     anchor="center",
                     text=text,
-                    font=self.selected_font,
+                    font=self.selected_button_font,
                     fill=highligted_color,
                 )
             else:
-                self.c.create_text((x_pos1 + x_pos2)/2, self.bar_height/2, anchor="center", text=text, font=font)
+                self.c.create_text(
+                    (x_pos1 + x_pos2) / 2,
+                    self.bar_height / 2,
+                    anchor="center",
+                    text=text,
+                    font=font,
+                )
 
     def draw_temp_state_with_error_check(self):
         self.cursor_position = max(min(self.cursor_position, self.buttons_len - 1), 0)

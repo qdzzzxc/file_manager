@@ -1,3 +1,3 @@
 import os
 
-work_dir = os.getcwd()
+work_dir = os.path.join(os.getcwd(), 'directory')
