@@ -37,3 +37,14 @@ class ColumnPage(FilePage):
             self.path = os.path.dirname(self.path)
             return True
         return False
+    
+    def touch(self, filename, base=False):
+        if os.path.exists(os.path.join(self.path, filename)):
+            filename = filename.split('.')[:-1]
+            extension = filename.split('.')[-1]
+            num = 1
+            while os.path.exists(os.path.join(self.path, f"{filename} ({num}).{extension}")):
+                num += 1
+            filename = f"{filename} ({num}).{extension}"
+        open(os.path.join(self.path, filename), 'a').close()
+        

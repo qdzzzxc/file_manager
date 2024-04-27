@@ -35,7 +35,7 @@ class Application(tk.Tk):
             width=self.width,
             height=bar_height,
             bar_height=bar_height,
-            buttons_names=['Открыть', 'Создать', 'Копировать', 'Вырезать', 'Удалить'],
+            buttons_names=['Открыть', 'Создать файл', 'Создать папку', 'Копировать', 'Вырезать', 'Удалить'],
             fabric=True
         )
         self.bottom_bar = RowWindow(
