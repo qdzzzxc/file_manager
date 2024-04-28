@@ -2,7 +2,9 @@ import tkinter as tk
 
 from data_getter import ColumnPage
 from widgets import ColumnWindow, RowWindow
-from fabric import OSFabric
+from fabric import OSFabric, OptionsFabric
+
+from config import load_json, save_json
 
 
 class Application(tk.Tk):
@@ -10,28 +12,31 @@ class Application(tk.Tk):
         super().__init__()
 
         self.fabric = OSFabric(root=self)
+        self.options_fabric = OptionsFabric(root=self)
+
+        self.bg_color, self.active_color, self.selected_color = load_json()
 
         self.title("File manager")
         self.geometry(f"{width}x{height}")
         self.width = width
         self.height = height
-        self.f = tk.Frame(self, width=width, height=height, bg="lightblue")
+        self.f = tk.Frame(self, width=width, height=height, bg=self.bg_color)
         self.f.pack()
         self.left_window = ColumnWindow(
-            self.f,
+            self,
             width=self.width // 2,
             height=self.height - bar_height * 2,
             data_page_cls=ColumnPage,
         )
         self.right_window = ColumnWindow(
-            self.f,
+            self,
             width=self.width // 2,
             height=self.height - bar_height * 2,
             data_page_cls=ColumnPage,
         )
 
         self.top_bar = RowWindow(
-            self.f,
+            self,
             width=self.width,
             height=bar_height,
             bar_height=bar_height,
@@ -44,14 +49,16 @@ class Application(tk.Tk):
                 "Вырезать",
                 "Удалить",
             ],
-            fabric=True,
+            fabric=self.fabric,
         )
         self.bottom_bar = RowWindow(
-            self.f,
+            self,
             width=self.width,
             height=self.height - bar_height,
             bar_height=bar_height,
             buttons_names=["Помощь", "Настройки"],
+            need_active=False,
+            fabric=self.options_fabric,
         )
 
         self.left_window.c.place(x=0, y=bar_height)
@@ -69,8 +76,19 @@ class Application(tk.Tk):
         self.windows = [self.left_window, self.right_window]
         self.temp_window = self.left_window
         self.change_active(left=True)
+
+        self.apply_colors()
+
+    def apply_colors(self, bg_color=None, active_color=None, selected_color=None):
+        self.bg_color = bg_color if bg_color is not None else self.bg_color
+        self.active_color = active_color if active_color is not None else self.active_color
+        self.selected_color = selected_color if selected_color is not None else self.selected_color
+
         for window in self.windows + self.bars:
+            window.c.configure(bg=self.bg_color)
             window.draw_temp_state()
+
+        save_json(self.bg_color, self.active_color, self.selected_color)
 
     def bind_keys(self):
         self.f.focus_set()

@@ -6,11 +6,13 @@ from abc import abstractmethod
 
 
 class AdapterWindow:
-    def __init__(self, root, width, height, data_page_cls, active=False):
+    def __init__(self, root, width, height, active=False):
         self.active = active
         self.c = tk.Canvas(
-            root, width=width, height=height, bg="lightblue", highlightthickness=0
+            root.f, width=width, height=height, bg=root.bg_color, highlightthickness=0
         )
+
+        self.root = root
 
         self.width = width
         self.height = height
@@ -81,18 +83,28 @@ class ColumnWindow(AdapterWindow):
         self.c.delete("all")
 
         font = self.common_font
-        self.text_path_field = tk.Text(
-            self.c,
-            height=1,
-            width=self.width,
-            bg="lightblue",
+        # self.text_path_field = tk.Text(
+        #     self.c,
+        #     height=1,
+        #     width=self.width,
+        #     bg=self.root.bg_color,
+        #     font=font,
+        #     bd=0,
+        #     wrap="none",
+        # )
+
+        # self.text_path_field.place(x=0, y=0)
+        # self.text_path_field.insert(tk.END, self.data_page.path)
+
+        self.c.create_text(
+            0,
+            0,
+            anchor="nw",
+            text=self.data_page.get_env_path(),
             font=font,
-            bd=0,
-            wrap="none",
+            fill='black',
         )
 
-        self.text_path_field.place(x=0, y=0)
-        self.text_path_field.insert(tk.END, self.data_page.path)
         self.c.create_rectangle(0, 20, self.width, self.height, fill=rect_color)
         y_offset = self.first_offset
 
@@ -102,8 +114,8 @@ class ColumnWindow(AdapterWindow):
             text = f"> {file_name}" if isdir else f"| {file_name}"
             if i == self.cursor_position - self.offset:
                 self.selected_file = (file_name, isdir)
-                rect_color = "#AFEEEE" if self.active else rect_color
-                rect_color = "#E0FFFF" if self.selected else rect_color
+                rect_color = self.root.active_color if self.active else rect_color
+                rect_color = self.root.selected_color if self.selected else rect_color
 
                 self.c.create_rectangle(
                     0, y_offset, self.width, y_offset + 20, fill=rect_color
@@ -195,13 +207,15 @@ class RowWindow(AdapterWindow):
         height,
         bar_height=30,
         buttons_names=None,
-        fabric=False,
+        fabric=None,
         buttons_coords=None,
         active=False,
+        need_active=True,
     ):
         super().__init__(root, width, height, active)
 
-        self.active_option = 0
+        self.need_active = need_active
+        self.active_option = 0 if need_active else -1
 
         self.bar_height = bar_height
 
@@ -215,7 +229,8 @@ class RowWindow(AdapterWindow):
         self.fabric = fabric
 
     def update_active_option(self):
-        self.active_option = self.cursor_position
+        if self.need_active:
+            self.active_option = self.cursor_position
 
     def draw_temp_state(self, highligted_color="black"):
         content = self.buttons_names
@@ -230,7 +245,7 @@ class RowWindow(AdapterWindow):
         for i, (name, x_pos1, x_pos2) in enumerate(
             zip(content, self.buttons_coords, self.buttons_coords[1:])
         ):
-            rect_color = "#AFEEEE" if i == self.active_option else None
+            rect_color = self.root.active_color if i == self.active_option else None
             self.c.create_rectangle(
                 x_pos1, 0, x_pos2, self.bar_height - 1, fill=rect_color
             )
@@ -258,8 +273,8 @@ class RowWindow(AdapterWindow):
         self.cursor_position = max(min(self.cursor_position, self.buttons_len - 1), 0)
         self.draw_temp_state()
 
-    def enter_press(self, fabric):
-        if self.fabric:
-            fabric.choose_mode(self.cursor_position)
+    def enter_press(self, fabric=None):
+        if self.fabric is not None:
+            self.fabric.choose_mode(self.cursor_position, self)
 
         self.update_active_option()

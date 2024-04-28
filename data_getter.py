@@ -98,3 +98,6 @@ class ColumnPage(FilePage):
         else:
             shutil.move(src, os.path.join(dst, src.split(os.path.sep)[-1]),
                         copy_function=shutil.copytree)
+  
+    def get_env_path(self):
+        return os.path.relpath(self.path, os.path.dirname(self.work_dir))
